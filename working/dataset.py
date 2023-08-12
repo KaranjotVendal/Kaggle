@@ -98,7 +98,7 @@ class BrainRSNADataset(Dataset):
     ):
         case_id = str(case_id).zfill(5)
 
-        path = f"../input/reduced_dataset/{case_id}/{self.type}/*.png"
+        path = f'./input/reduced_dataset/{case_id}/{self.type}/*.png'
         files = sorted(
             glob.glob(path),
             key=lambda var: [
