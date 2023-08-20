@@ -76,15 +76,16 @@ for m in mod:
         print(f"-----------------train_{m}_{fold}-------------------")
         
         train_dataset = BrainRSNADataset(
-                                        patient_path='./input/reduced_dataset/',
+                                        patient_path='./input/reduced_dataset',
                                         paths=xtrain, 
                                         targets= ytrain,
                                         mri_type=m,
                                         ds_type=f"train_{m}_{fold}"
                                         )
+        print('loaded dataset')
 
         valid_dataset = BrainRSNADataset(
-                                        patient_path='./input/reduced_dataset/',
+                                        patient_path='./input/reduced_dataset',
                                         paths=xtest,
                                         targets=ytest,
                                         mri_type=m,
@@ -101,11 +102,12 @@ for m in mod:
                                         drop_last=False,
                                         pin_memory=True,
                                     )
+        print('loaded dataloader')
 
         validation_dl = torch.utils.data.DataLoader(
                                         valid_dataset,
                                         batch_size=config.TEST_BATCH_SIZE,
-                                        shuffle=False,
+                                        shuffle=True,
                                         num_workers=config.n_workers,
                                         pin_memory=True,
                                     )

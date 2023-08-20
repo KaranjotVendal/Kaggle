@@ -44,7 +44,7 @@ class BrainRSNADataset(Dataset):
     '''
     def _prepare_biggest_images(self):
         big_image_indexes = {}
-        if (f"big_image_indexes_{self.ds_type}.pkl" in os.listdir("../input/"))\
+        if (f"big_image_indexes_{self.ds_type}.pkl" in os.listdir("../input/"))
             and (self.do_load) :
             print("Loading the best images indexes for all the cases...")
             big_image_indexes = joblib.load(f"../input/big_image_indexes_{self.ds_type}.pkl")
@@ -92,7 +92,7 @@ class BrainRSNADataset(Dataset):
     ):
         case_id = str(case_id).zfill(5)
 
-        path = f"../input/reduced_dataset/{case_id}/{self.type}/*.png"
+        path = f"./input/reduced_dataset/{case_id}/{self.type}/*.png"
         files = sorted(
             glob.glob(path),
             key=lambda var: [
@@ -100,13 +100,20 @@ class BrainRSNADataset(Dataset):
             ],
         )
 
+        print('len files:', len(files))
+
+
         middle = len(files) // 2
+        print('middle', middle)
         if len(files) <= 64:
             image_stack = [load_image(f) for f in files]
+            print('image-stack shape', len(image_stack))
+ 
         else:
             p1 = middle - 32 #max(0, middle - num_imgs2)
             p2 = middle + 32 #min(len(files), middle + num_imgs2)
             image_stack = [load_image(f) for f in files[p1:p2]]
+            print('image-stack shape', len(image_stack))
             
             
             
