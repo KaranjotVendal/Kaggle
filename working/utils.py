@@ -1,7 +1,11 @@
 import numpy as np
+import pandas as pd
 import config
 import cv2
+import os
+import json
 
+import torch
 
 def load_image(path, size=(config.IMAGE_SIZE, config.IMAGE_SIZE)):
     image = cv2.imread(path, 0)
@@ -10,6 +14,74 @@ def load_image(path, size=(config.IMAGE_SIZE, config.IMAGE_SIZE)):
     
     image = cv2.resize(image, size) / 255
     return image.astype('f')
+
+
+def save_nested_dict_to_csv(metrics_dict, csv_path):
+    """
+    Flattens a nested dictionary of metrics and saves it to a CSV file.
+
+    Parameters:
+    - metrics_dict: Nested dictionary containing metric values.
+    - csv_path: Path to save the CSV file.
+    """
+    rows = []
+    
+    for fold, datasets in metrics_dict.items():
+        for dataset_type, metrics in datasets.items():
+            for metric_name, values in metrics.items():
+                for epoch, value in enumerate(values, start=1):
+                    rows.append({
+                        'fold': fold,
+                        'dataset': dataset_type,
+                        'epoch': epoch,
+                        'metric': metric_name,
+                        'value': value
+                    })
+    
+    df = pd.DataFrame(rows)
+    df.to_csv(csv_path, index=False)
+
+def update_metrics(metrics, fold, dataset_type, metric_name, value):
+    if fold not in metrics:
+        metrics[fold] = {}
+    
+    if dataset_type not in metrics[fold]:
+        metrics[fold][dataset_type] = {}
+    
+    if metric_name not in metrics[fold][dataset_type]:
+        metrics[fold][dataset_type][metric_name] = []
+
+    metrics[fold][dataset_type][metric_name].append(value)
+
+class TensorEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.tolist()
+        return super().default(obj)
+
+
+def save_metrics_to_json(metrics, model_name, encoder=TensorEncoder):
+    base_dir = '../plots'
+    save_path = os.path.join(base_dir, model_name)
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+
+    filename = f"metrics_{model_name}.json"
+    full_path = os.path.join(save_path, filename)
+    with open(full_path, "w") as file:
+        json.dump(metrics, file, cls=encoder)
+    
+    print(f'Saving {filename}')
+    return full_path
+
+
+
+
+
+
+
+
+
 
 '''
 def load_dicom_image(path, img_size=config.IMAGE_SIZE, voi_lut=True, rotate=0):

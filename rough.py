@@ -1,52 +1,69 @@
-class DataRetriever(Dataset):
-    def __init__(self, patient_path, paths, targets, n_frames, img_size, transform=None):
-        #(self, './input/reduced_dataset/', t['xtrain'],t['ytrain'], 10, 112, transform)
+import os
+import glob
+import random
+import numpy as np
+
+import torch
+import torchvision.transforms as transforms
+from torch.utils.data import Dataset
+
+from utils import load_image
+
+class RSNAdataset(Dataset):
+    def __init__(self, patient_path, paths, targets, n_slices, img_size, type, transform=None):
         self.patient_path = patient_path
         self.paths = paths
         self.targets = targets
-        self.n_frames = n_frames
+        self.n_slices = n_slices
         self.img_size = img_size
         self.transform = transform
+        self.type = type
           
     def __len__(self):
         return len(self.paths)
     
-    def read_video(self, vid_paths):
-        video = [load_image(path, (self.img_size, self.img_size)) for path in vid_paths]
-        if self.transform:
-            seed = random.randint(0,99999)
-            for i in range(len(video)):
-                random.seed(seed)
-                video[i] = self.transform(image=video[i])["image"]
+    def padding(self, paths): 
+        images = [load_image(path) for path in paths]
+        org_size = len(images)
         
-        video = [torch.tensor(frame, dtype=torch.float32) for frame in video]
-        if len(video)==0:
-            video = torch.zeros(self.n_frames, self.img_size, self.img_size)
+        # Apply transformations if provided
+        if self.transform:
+            seed = random.randint(0, 99999)
+            for i in range(len(images)):
+                random.seed(seed)
+                images[i] = self.transform(image=images[i])["image"]
+
+        dup_len = self.n_slices - len(images)
+        if org_size == 0:
+            dup = np.zeros((1, self.img_size, self.img_size))
         else:
-            video = torch.stack(video) # T * C * H * W
-        return video
+            dup = images[-1]
+
+        # Ensure the duplicate image has the correct shape
+        if len(dup.shape) == 2:
+            dup = dup.reshape(1, *dup.shape)
+
+        images.extend([dup] * dup_len)
+        
+        images = torch.tensor(images, dtype=torch.float32)
+        return images, org_size
     
     def __getitem__(self, index):
         _id = self.paths[index]
         patient_path = os.path.join(self.patient_path, f'{str(_id).zfill(5)}/')
 
-        channels = []
-        for t in ["FLAIR", "T1w", "T1wCE", "T2w"]:
-            t_paths = sorted(
-                glob.glob(os.path.join(patient_path, t, "*")), 
-                key=lambda x: int(x[:-4].split("-")[-1]),
-            )
-            num_samples = self.n_frames
-            if len(t_paths) < num_samples:
-                in_frames_path = t_paths
-            else:
-                in_frames_path = uniform_temporal_subsample(t_paths, num_samples)
+        data = []
+        org = []
+        t_paths = sorted(
+            glob.glob(os.path.join(patient_path, self.type, "*")), 
+            key=lambda x: int(x[:-4].split("-")[-1]),
+        )
+        image, org_size = self.padding(t_paths)
+
+        data.append(image)
+        org.append(org_size)
             
-            channel = self.read_video(in_frames_path)
-            if channel.shape[0] == 0:
-                channel = torch.zeros(num_samples, self.img_size, self.img_size)
-            channels.append(channel)
-            
-        channels = torch.stack(channels).transpose(0,1)
-        y = torch.tensor(self.targets[index], dtype=torch.float)
-        return {"X": channels.float(), "y": y}
+        data = torch.stack(data).transpose(0,1)
+        y = torch.tensor(self.targets[index])
+        
+        return {"X": data.float(), "y": y, 'org': org}
