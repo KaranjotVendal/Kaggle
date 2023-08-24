@@ -23,7 +23,8 @@ To train the model using the competition data, please follow these steps:
  
 1. Clone this repo
 2. Install dependencies via `pip install -r requirements.txt`
-3. Download the competition data from [here](https://drive.google.com/file/d/1b1cbJojNYjCLrxbz0KG8ca3tiYPt_3B0/view?usp=sharing) and place the downloaded files in the `input` folder. 
+3. Download the competition data from [here](https://drive.google.com/file/d/1b1cbJojNYjCLrxbz0KG8ca3tiYPt_3B0/view?usp=sharing) and place the downloaded files in the `input` folder.
+   - [train labels](https://drive.google.com/file/d/1rCqwfbEKd9ICnRhwwq5H81ZHfYos0Yex/view?usp=drive_link)
 4. Set the configuration file `working/config.py`. It is recommended to use the default values.
 
     * TRAINING_BATCH_SIZE: The training batch size
