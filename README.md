@@ -23,7 +23,7 @@ To train the model using the competition data, please follow these steps:
  
 1. Clone this repo
 2. Install dependencies via `pip install -r requirements.txt`
-3. Download the competition data from [here](https://www.kaggle.com/c/rsna-miccai-brain-tumor-radiogenomic-classification/data) and place the downloaded files in the `input` folder. 
+3. Download the competition data from [here](https://drive.google.com/file/d/1b1cbJojNYjCLrxbz0KG8ca3tiYPt_3B0/view?usp=sharing) and place the downloaded files in the `input` folder. 
 4. Set the configuration file `working/config.py`. It is recommended to use the default values.
 
     * TRAINING_BATCH_SIZE: The training batch size
@@ -35,8 +35,11 @@ To train the model using the competition data, please follow these steps:
     * n_workers: Number of workers used during the training
 
 5. In case you want to use the pretrained weights from the final kaggle solution please skip the training step (next step). You will find the pretrained weights in `weights/`
-6. Run training script `bash working/train_valid.sh`
-7. Run prediction script `python3 -m working.predict`
+6. Run training script `python ./working/train.py`
 
+If you have any questions, please don't hestiate to reach out to me on this email: karanjotvendal@gmail.com
 
-If you have any questions, please don't hestiate to reach out to me on this email: firas.baba96@gmail.com
+## ORIGINAL Authors
+
+- [@FirsaBaba](https://github.com/FirasBaba/rsna-resnet10)
+firas.baba96@gmail.com

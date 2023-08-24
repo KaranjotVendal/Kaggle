@@ -134,3 +134,6 @@ input/reduced_dataset/
 #wandb
 /wandb
 working/wandb
+working/rough.ipynb
+rough.ipynb
+rough.py

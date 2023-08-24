@@ -69,7 +69,7 @@ def plot_train_valid_fold(json_path, metrics):
     with open(json_path, "r") as file:
         metrics_json = json.load(file)    
     
-    base_dir = '../plots'
+    base_dir = './plots'
     model_dir = os.path.join(base_dir, 'resnet10')
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
@@ -103,7 +103,7 @@ def plot_trian_valid_all_fold(json_path, metrics):
     with open(json_path, "r") as file:
         metrics_json = json.load(file)    
 
-    base_dir = '../plots'
+    base_dir = './plots'
     model_dir = os.path.join(base_dir, 'resnet10')
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
@@ -147,5 +147,5 @@ def plot_test_metrics(json_filepath, metric_name):
     plt.xticks(folds)  # This ensures each fold is shown on the x-axis
     plt.grid(True)#, which='both', linestyle='--', linewidth=0.5)
     plt.tight_layout()
-    plt.savefig(f'../plots/resnet10/test_{metric_name}_plot.png')
+    plt.savefig(f'./plots/resnet10/test_{metric_name}_plot.png')
     plt.close()

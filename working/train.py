@@ -19,28 +19,30 @@ from plotting import plot_train_valid_fold, plot_trian_valid_all_fold, plot_test
 
 import wandb
 
-wandb.login(key='a2a7828ed68b3cba08f2703971162138c680b664')
+wandb.login(key='')
 
 #mod = ['FLAIR', 'T1w', 'T1wCE', 'T2w']
 mod = ['FLAIR']
 for m in mod:
-    wandb.init(
-    project="Kaggle_LB-1 sanity check", 
-    name=f"experiment_{m}", 
-    config={
-    "learning_rate": 0.0001,
-    "architecture": "ResNet10",
-    "dataset": "MICAA MRI",
-    "epochs": config.N_EPOCHS,
-    "Batch size": config.TRAINING_BATCH_SIZE
-    })
+    if config.WANDB:
+        wandb.init(
+        project="Kaggle LB-1", 
+        name=f"experiment_{m}",
+        notes='',
+        config={
+        "learning_rate": 0.0001,
+        "architecture": "ResNet10",
+        "dataset": "MICAA MRI",
+        "epochs": config.N_EPOCHS,
+        "Batch size": config.TRAINING_BATCH_SIZE
+        })
 
     start_time = time.time()
 
     dlt = []
     empty_fld = [109, 123, 709]
     df = pd.read_csv("./input/train_labels.csv")
-    skf = StratifiedKFold(n_splits=5)
+    skf = StratifiedKFold(n_splits=config.NFOLDS)
     X = df['BraTS21ID'].values
     Y = df['MGMT_value'].values
 
@@ -82,7 +84,6 @@ for m in mod:
                                         mri_type=m,
                                         ds_type=f"train_{m}_{fold}"
                                         )
-        print('loaded dataset')
 
         valid_dataset = BrainRSNADataset(
                                         patient_path='./input/reduced_dataset',
@@ -102,7 +103,6 @@ for m in mod:
                                         drop_last=False,
                                         pin_memory=True,
                                     )
-        print('loaded dataloader')
 
         validation_dl = torch.utils.data.DataLoader(
                                         valid_dataset,
@@ -160,11 +160,12 @@ for m in mod:
                 #case_ids.append(batch["case_id"])
             preds = np.vstack(preds).T[0].tolist()
             true_labels = np.hstack(true_labels).tolist()
+            preds_labels = [1 if p > 0.5 else 0 for p in preds]
             #case_ids = np.hstack(case_ids).tolist()
             t_loss = tr_loss / (step +1)
             t_auc_score = roc_auc_score(true_labels, preds)
-            t_f1 = f1_score(true_labels, preds)
-            t_acc = accuracy_score(true_labels, preds)
+            t_f1 = f1_score(true_labels, preds_labels)
+            t_acc = accuracy_score(true_labels, preds_labels)
             
             wandb.log({
                 'train loss': t_loss,
@@ -207,14 +208,16 @@ for m in mod:
                         #case_ids.append(batch["case_id"])
                 preds = np.vstack(preds).T[0].tolist()
                 true_labels = np.hstack(true_labels).tolist()
+                preds_labels = [1 if p > 0.5 else 0 for p in preds]
                 #case_ids = np.hstack(case_ids).tolist()
                 
                 v_loss = val_loss / (step + 1)
                 v_auc_score = roc_auc_score(true_labels, preds)
-                v_f1 = f1_score(true_labels, preds)
-                v_acc = accuracy_score(true_labels, preds)
+                v_f1 = f1_score(true_labels, preds_labels)
+                v_acc = accuracy_score(true_labels, preds_labels)
                 
-            wandb.log({'valid auroc': v_auc_score,
+            if config.WANDB:
+                wandb.log({'valid auroc': v_auc_score,
                         'valid f1': v_f1,
                         'valid acc': v_acc,
                         'valid loss': val_loss
@@ -240,16 +243,16 @@ for m in mod:
             if v_auc_score > best_auc:
                 print("Saving the model...")
 
-                all_files = os.listdir("../weights/checkpoints/")
+                all_files = os.listdir("./weights/checkpoints/")
 
                 for f in all_files:
                     if f"resnet10_{m}_fold{fold}" in f:
-                        os.remove(f"../weights/checkpoints/{f}")
+                        os.remove(f"./weights/checkpoints/{f}")
 
                 best_auc = v_auc_score
                 torch.save(
                     model.state_dict(),
-                    f"../weights/checkpoints/resnet10_{m}_{fold}.pth",
+                    f"./weights/checkpoints/resnet10_{m}_{fold}.pth",
                 )
         #evaluation
 
@@ -287,8 +290,7 @@ for m in mod:
         fold_f1.append(test_f1)
         fold_auroc.append(test_auroc)
 
-        print('\nTraining complete for fold: {fold} {:.0f}m {:.0f}s'.format(fold, elapsed_time // 60, elapsed_time % 60))
-
+        
     json_path = save_metrics_to_json(metrics, 'resnet10')
     
     #plotting loss
@@ -323,9 +325,10 @@ for m in mod:
     print('\nStd F1 score:', np.std(np.array(fold_f1)))
     print('\nAVG performance of model:', np.mean(np.array(fold_f1)))
 
-    wandb.log({
+    if config.WANDB:
+        wandb.log({
         'Avg performance': np.mean(np.array(fold_f1)),
         'Std f1 score': np.std(np.array(fold_f1))
-    })
+        })
     
-    wandb.finish()
+        wandb.finish()

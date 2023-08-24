@@ -61,7 +61,7 @@ class TensorEncoder(json.JSONEncoder):
 
 
 def save_metrics_to_json(metrics, model_name, encoder=TensorEncoder):
-    base_dir = '../plots'
+    base_dir = './plots'
     save_path = os.path.join(base_dir, model_name)
     if not os.path.exists(save_path):
         os.mkdir(save_path)

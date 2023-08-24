@@ -1,26 +1,19 @@
 import os
 import time
 import numpy as np
-import pandas as pd
-
-#from gradcam import gradcam
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from sklearn.metrics import roc_auc_score, f1_score, accuracy_score
 import monai
 
 import config
-from dataset import BrainRSNADataset
-
 import wandb
     
     
-def evaluate(model, validation_dl, fold, mod):
+def evaluate(validation_dl, fold, mod):
     test_time = time.time()
     model = monai.networks.nets.resnet10(spatial_dims=3, n_input_channels=1, num_classes=1)   
-    checkpoint = torch.load(f'../weights/checkpoints/resnet10_{mod}_{fold}.pth')
+    checkpoint = torch.load(f'./weights/checkpoints/resnet10_{mod}_{fold}.pth')
     model.load_state_dict(checkpoint)
     model.to(config.device)
     model.eval()
@@ -39,14 +32,16 @@ def evaluate(model, validation_dl, fold, mod):
             true_labels.append(targets.cpu().numpy())
     preds = np.vstack(preds).T[0].tolist()
     true_labels = np.hstack(true_labels).tolist()
-    
+    preds_labels = [1 if p > 0.5 else 0 for p in preds]
+                
     
     auc_score = roc_auc_score(true_labels, preds)
-    f1 = f1_score(true_labels, preds)
-    acc = accuracy_score(true_labels, preds)
+    f1 = f1_score(true_labels, preds_labels)
+    acc = accuracy_score(true_labels, preds_labels)
     
     
-    wandb.log({
+    if config.WANDB:
+        wandb.log({
                 'test acc': acc,
                 'test f1': f1,
                 'test AUROC': auc_score

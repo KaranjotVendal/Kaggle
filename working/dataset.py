@@ -1,8 +1,6 @@
 import glob
-import os
 import re
 
-import joblib
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -39,35 +37,6 @@ class BrainRSNADataset(Dataset):
             return {"image": _3d_images, "target": target}
         else:
             return {"image": _3d_images, "target": target}
-        
-
-    '''
-    def _prepare_biggest_images(self):
-        big_image_indexes = {}
-        if (f"big_image_indexes_{self.ds_type}.pkl" in os.listdir("../input/"))
-            and (self.do_load) :
-            print("Loading the best images indexes for all the cases...")
-            big_image_indexes = joblib.load(f"../input/big_image_indexes_{self.ds_type}.pkl")
-            return big_image_indexes
-        else:
-            
-            print("Caulculating the best scans for every case...")
-            for row in tqdm(self.data.iterrows(), total=len(self.data)):
-                case_id = str(int(row[1].BraTS21ID)).zfill(5)
-                path = f"../input/{self.folder}/{case_id}/{self.type}/*.dcm"
-                files = sorted(
-                    glob.glob(path),
-                    key=lambda var: [
-                        int(x) if x.isdigit() else x for x in re.findall(r"[^0-9]|[0-9]+", var)
-                    ],
-                )
-                resolutions = [utils.extract_cropped_image_size(f) for f in files]
-                middle = np.array(resolutions).argmax()
-                big_image_indexes[case_id] = middle
-
-            joblib.dump(big_image_indexes, f"../input/big_image_indexes_{self.ds_type}.pkl")
-            return big_image_indexes'''
-
 
 
     def get_middle(self, files):
@@ -81,8 +50,6 @@ class BrainRSNADataset(Dataset):
         image_numbers.sort()
         return image_numbers[len(image_numbers) // 2]
 
-
-    
     def load_images_3d(
         self,
         case_id,
@@ -100,27 +67,18 @@ class BrainRSNADataset(Dataset):
             ],
         )
 
-        print('len files:', len(files))
-
-
         middle = len(files) // 2
-        print('middle', middle)
+        #print('middle', middle)
         if len(files) <= 64:
             image_stack = [load_image(f) for f in files]
-            print('image-stack shape', len(image_stack))
+            #print('image-stack shape', len(image_stack))
  
         else:
             p1 = middle - 32 #max(0, middle - num_imgs2)
             p2 = middle + 32 #min(len(files), middle + num_imgs2)
             image_stack = [load_image(f) for f in files[p1:p2]]
-            print('image-stack shape', len(image_stack))
             
             
-            
-        '''num_imgs2 = num_imgs // 2
-        p1 = max(0, middle - num_imgs2)
-        p2 = min(len(files), middle + num_imgs2)
-        image_stack = [load_dicom_image(f, rotate=rotate) for f in files[p1:p2]]'''
         
         img3d = np.stack(image_stack).T
         if img3d.shape[-1] < num_imgs:
@@ -132,40 +90,3 @@ class BrainRSNADataset(Dataset):
             img3d = img3d / np.max(img3d)
 
         return np.expand_dims(img3d, 0)
-    
-    
-    
-    
-    
-    
-    '''def load_dicom_images_3d(
-        self,
-        case_id,
-        num_imgs=config.NUM_IMAGES_3D,
-        img_size=config.IMAGE_SIZE,
-        rotate=0,
-    ):
-        case_id = str(case_id).zfill(5)
-
-        path = f'./input/reduced_dataset/{case_id}/{self.type}/*.png'
-        files = sorted(
-            glob.glob(path),
-            key=lambda var: [
-                int(x) if x.isdigit() else x for x in re.findall(r"[^0-9]|[0-9]+", var)
-            ],
-        )
-
-        middle = self.get_middle(files)
-
-        # # middle = len(files) // 2
-        num_imgs2 = num_imgs // 2
-        p1 = max(0, middle - num_imgs2)
-        p2 = min(len(files), middle + num_imgs2)
-        image_stack = [utils.load_image(f) for f in files[p1:p2]]
-        
-        img3d = np.stack(image_stack).T
-        if img3d.shape[-1] < num_imgs:
-            n_zero = np.zeros((img_size, img_size, num_imgs - img3d.shape[-1]))
-            img3d = np.concatenate((img3d, n_zero), axis=-1)
-
-        return np.expand_dims(img3d, 0)'''
