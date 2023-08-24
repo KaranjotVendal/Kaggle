@@ -2,10 +2,10 @@
 # RSNA-MICCAI Brain Tumor Radiogenomic Classification
 
 ## Hardware/OS used for the competiion
-- CPU: AMD Ryzen™ 7 5800X, 8cores
-- GPU: RTX 3090
-- RAM: 32GB
-- OS: Ubuntu 20.04
+- CPU: Intel i9-12900K
+- GPU: RTX 3060
+- RAM: 64GB
+- OS: Windows 10
 
 ## Kaggle resources
 
