@@ -135,5 +135,5 @@ input/reduced_dataset/
 /wandb
 working/wandb
 /working/rough.ipynb
-/rough.ipynb
-/rough.py
+rough.ipynb
+rough.py
