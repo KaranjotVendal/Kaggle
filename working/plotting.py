@@ -99,7 +99,7 @@ def plot_train_valid_fold(json_path, metrics):
 
 
 
-def plot_trian_valid_all_fold(json_path, metrics):
+def plot_train_valid_all_fold(json_path, metrics):
     with open(json_path, "r") as file:
         metrics_json = json.load(file)    
 
@@ -114,8 +114,8 @@ def plot_trian_valid_all_fold(json_path, metrics):
 
     plt.figure(figsize=(12, 6))
     for fold, data in metrics_json.items():
-        plt.plot(data['train'][metrics], label=f'Train Loss Fold {fold}', marker = 'o')
-        plt.plot(data['valid'][metrics], linestyle='dashed', label=f'Valid Loss Fold {fold}', marker = 'o')
+        plt.plot(data['train'][metrics], label=f'Train {metrics} Fold {fold}', marker = 'o')
+        plt.plot(data['valid'][metrics], linestyle='dashed', label=f'Valid {metrics} Fold {fold}', marker = 'o')
 
     plt.title(f'Train & Valid {metrics} Across All Folds')
     plt.xlabel('Epochs')
@@ -143,7 +143,7 @@ def plot_test_metrics(json_filepath, metric_name):
     plt.plot(folds, metric_values, marker='o', linestyle='-')
     plt.xlabel("Folds")
     plt.ylabel(f"{metric_name.capitalize()} Score")
-    plt.title(f"{metric_name.capitalize()} Score w.r.t Folds for {dataset_type.capitalize()} Dataset")
+    plt.title(f"{metric_name.capitalize()} Score w.r.t Folds")
     plt.xticks(folds)  # This ensures each fold is shown on the x-axis
     plt.grid(True)#, which='both', linestyle='--', linewidth=0.5)
     plt.tight_layout()

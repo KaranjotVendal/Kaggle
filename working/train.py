@@ -15,7 +15,7 @@ import config
 from dataset import BrainRSNADataset
 from eval import evaluate
 from utils import update_metrics, save_metrics_to_json
-from plotting import plot_train_valid_fold, plot_trian_valid_all_fold, plot_test_metrics
+from plotting import plot_train_valid_fold, plot_train_valid_all_fold, plot_test_metrics
 
 import wandb
 
@@ -42,7 +42,7 @@ for m in mod:
     dlt = []
     empty_fld = [109, 123, 709]
     df = pd.read_csv("./input/train_labels.csv")
-    skf = StratifiedKFold(n_splits=config.NFOLDS)
+    skf = StratifiedKFold(n_splits=config.NFOLDS, shuffle=True, random_state=518)
     X = df['BraTS21ID'].values
     Y = df['MGMT_value'].values
 
@@ -93,7 +93,6 @@ for m in mod:
                                         is_train=False,
                                         ds_type=f"val_{m}_{fold}"
                                         )
-
 
         train_dl = torch.utils.data.DataLoader(
                                         train_dataset,
@@ -208,53 +207,53 @@ for m in mod:
                         #case_ids.append(batch["case_id"])
                 preds = np.vstack(preds).T[0].tolist()
                 true_labels = np.hstack(true_labels).tolist()
-                preds_labels = [1 if p > 0.5 else 0 for p in preds]
-                #case_ids = np.hstack(case_ids).tolist()
-                
+                preds_labels = [1 if p > 0.5 else 0 for p in preds]    
                 v_loss = val_loss / (step + 1)
                 v_auc_score = roc_auc_score(true_labels, preds)
                 v_f1 = f1_score(true_labels, preds_labels)
                 v_acc = accuracy_score(true_labels, preds_labels)
+
+                auc_score_adj_best = 0
+                for thresh in np.linspace(0, 1, 50):
+                    auc_score_adj = roc_auc_score(true_labels, list(np.array(preds) > thresh))
+                    if auc_score_adj > auc_score_adj_best:
+                        best_thresh = thresh
+                        auc_score_adj_best = auc_score_adj
+
+                #case_ids = np.hstack(case_ids).tolist()
                 
-            if config.WANDB:
-                wandb.log({'valid auroc': v_auc_score,
-                        'valid f1': v_f1,
-                        'valid acc': v_acc,
-                        'valid loss': val_loss
-                        })
-            
-            hist['val_loss'].append(v_loss)
-            hist['val_acc'].append(v_acc)
-            hist['val_f1'].append(v_f1)
-            hist['val_auroc'].append(v_auc_score)
+                if config.WANDB:
+                    wandb.log({'valid auroc': v_auc_score,
+                            'valid f1': v_f1,
+                            'valid acc': v_acc,
+                            'valid loss': val_loss
+                            })
+                
+                hist['val_loss'].append(v_loss)
+                hist['val_acc'].append(v_acc)
+                hist['val_f1'].append(v_f1)
+                hist['val_auroc'].append(v_auc_score)
 
-            auc_score_adj_best = 0
-            for thresh in np.linspace(0, 1, 50):
-                auc_score_adj = roc_auc_score(true_labels, list(np.array(preds) > thresh))
-                if auc_score_adj > auc_score_adj_best:
-                    best_thresh = thresh
-                    auc_score_adj_best = auc_score_adj
-
-            valid_time = time.time() - v_time
-            print(
-                f" Val EPOCH {counter + 1}/{config.N_EPOCHS}: Validation average loss: {v_loss} + F1 Score = {v_f1} AUC SCORE = {v_auc_score} + AUC SCORE THRESH {best_thresh} = {auc_score_adj_best} | Time: {valid_time}"
-            )
-            
-            if v_auc_score > best_auc:
-                print("Saving the model...")
-
-                all_files = os.listdir("./weights/checkpoints/")
-
-                for f in all_files:
-                    if f"resnet10_{m}_fold{fold}" in f:
-                        os.remove(f"./weights/checkpoints/{f}")
-
-                best_auc = v_auc_score
-                torch.save(
-                    model.state_dict(),
-                    f"./weights/checkpoints/resnet10_{m}_{fold}.pth",
+                valid_time = time.time() - v_time
+                print(
+                    f" Val EPOCH {counter + 1}/{config.N_EPOCHS}: Validation average loss: {v_loss} + F1 Score = {v_f1} AUC SCORE = {v_auc_score} + AUC SCORE THRESH {best_thresh} = {auc_score_adj_best} | Time: {valid_time}"
                 )
-        #evaluation
+                
+                if v_auc_score > best_auc:
+                    print("Saving the model...")
+
+                    all_files = os.listdir("./weights/checkpoints/")
+
+                    for f in all_files:
+                        if f"resnet10_{m}_fold{fold}" in f:
+                            os.remove(f"./weights/checkpoints/{f}")
+
+                    best_auc = v_auc_score
+                    torch.save(
+                        model.state_dict(),
+                        f"./weights/checkpoints/resnet10_{m}_{fold}.pth",
+                    )
+            #evaluation
 
         test_acc, test_f1, test_auroc = evaluate(validation_dl, fold, m)
 
@@ -295,22 +294,22 @@ for m in mod:
     
     #plotting loss
     plot_train_valid_fold(json_path, 'loss')
-    plot_trian_valid_all_fold(json_path, 'loss')
+    plot_train_valid_all_fold(json_path, 'loss')
     
     #plotting acc
     plot_train_valid_fold(json_path, 'acc')
-    plot_trian_valid_all_fold(json_path, 'acc')
+    plot_train_valid_all_fold(json_path, 'acc')
     plot_test_metrics(json_path, 'acc')
 
 
     #plotting f1
     plot_train_valid_fold(json_path, 'f1')
-    plot_trian_valid_all_fold(json_path, 'f1')
+    plot_train_valid_all_fold(json_path, 'f1')
     plot_test_metrics(json_path, 'f1')
 
     #plotting auroc
     plot_train_valid_fold(json_path, 'auroc')
-    plot_trian_valid_all_fold(json_path, 'auroc')
+    plot_train_valid_all_fold(json_path, 'auroc')
     plot_test_metrics(json_path, 'auroc')
 
 
@@ -327,8 +326,12 @@ for m in mod:
 
     if config.WANDB:
         wandb.log({
-        'Avg performance': np.mean(np.array(fold_f1)),
-        'Std f1 score': np.std(np.array(fold_f1))
+        'Avg performance of F1': np.mean(np.array(fold_f1)),
+        'Std f1 score': np.std(np.array(fold_f1)),
+        'Avg performance of AUROC': np.mean(np.array(fold_auroc)),
+        'Std auroc score': np.std(np.array(fold_auroc)),
+        'Avg performance of Accuracy': np.mean(np.array(fold_acc)),
+        'Std accuracy score': np.std(np.array(fold_acc)),
         })
     
         wandb.finish()
